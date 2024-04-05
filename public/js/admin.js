@@ -53,14 +53,43 @@ const messageDiv = document.getElementById("message");
 
 drawButton.addEventListener("click", handleDrawClick);
 
+const premios = getPremios();
+
 function handleDrawClick() {
   const confirmationCode = generateCode(4);
+  const premio = null;
+
+  //const premioDiv = document.getElementById("premios");
+  const premioDiv = document.getElementsByName("premio");
+  premioDiv.forEach((premio) => {
+    if (premio.checked) {
+      const premioValue = premio.value;
+      premio = premioValue;
+      console.log(premioValue, premios[premioValue]);
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.send(
+          JSON.stringify({
+            action: ACTIONS.DRAW,
+            code: confirmationCode,
+            premio: premioValue,
+            nomePremio: premios[premioValue],
+          })
+        );
+        displayConfirmationCode(confirmationCode);
+      } else {
+        console.warn(
+          "Websocket não está aberto. Aguarde e tente novamente em instantes."
+        );
+      }
+    }
+  });
 
   if (socket.readyState === WebSocket.OPEN) {
     socket.send(
       JSON.stringify({
         action: ACTIONS.DRAW,
         code: confirmationCode,
+        premio: premio,
       })
     );
     displayConfirmationCode(confirmationCode);
@@ -76,4 +105,23 @@ function displayConfirmationCode(code) {
   messageDiv.classList.remove("hide-message");
   messageDiv.classList.add("show-message");
   drawButton.innerText = "Sorteado!";
+}
+
+function getPremios() {
+  const premios = {
+    1: "Smartphone",
+    2: "Notebook",
+    3: "Tablet",
+    4: "Smartwatch",
+  }
+
+  const premiosDiv = document.getElementById("premios");
+
+  for (const [key, value] of Object.entries(premios)) {
+    const premioDiv = document.createElement("div");
+    premioDiv.innerHTML = `<input type="radio" name="premio" value="${key}"> <label for="${value}" >${value}</label>`;
+    premiosDiv.appendChild(premioDiv);
+  }
+
+  return premios;
 }
